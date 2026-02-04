@@ -8,6 +8,7 @@ import getBlogForVisits from '../../services/blogs/getBlogForVisits';
 import getBlogHasClickTracking from '../../services/blogs/getBlogHasClickTracking';
 import getSlug from './getSlug';
 import isPreview from './isPreview';
+import generateVisitorHash from './generateVisitorHash';
 
 export default async function trackView(
   blogId: string,
@@ -81,6 +82,7 @@ export default async function trackView(
   const viewId = uuidv4();
   const country = turboGeoip.getCountry(userIp);
   const url = path || requestReferer;
+  const visitorHash = generateVisitorHash(blogId, userIp, useragent || '');
   const queueParams = {
     blogId,
     viewId,
@@ -90,6 +92,7 @@ export default async function trackView(
     useragent,
     lang,
     body,
+    visitorHash,
   };
   await pushToQueue(queueParams);
   return {
