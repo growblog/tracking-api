@@ -53,7 +53,7 @@ export default async function trackView(
   if (!enabled) {
     const error: any = new Error('INACTIVE_BLOG');
     error.statusCode = 400;
-    error.description = 'Please reactivate your blog on Ghostboard.io';
+    error.description = 'Please reactivate your blog on Growblog.io';
     throw error;
   }
   const normalizedDomain = blog.domain?.replace(/^www\./, '');
