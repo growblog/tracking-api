@@ -43,12 +43,11 @@ export default async function getBlogHasClickTracking(
           return resolve(false);
         }
         const plan: any = await db('plans').where('id', user.plan).first();
-        const daysFromFirstVisit = moment().diff(
-          moment(blog.firstVisit),
-          'days'
-        );
+        const daysFromFirstVisit = blog.firstVisit
+          ? moment().diff(moment(blog.firstVisit), 'days')
+          : 0;
         const trialDaysLeft = user.trialDays - daysFromFirstVisit;
-        const isFreeTrial = trialDaysLeft >= 0;
+        const isFreeTrial = !blog.firstVisit || trialDaysLeft >= 0;
         const planHasClicks = plan?.hasClicks === true;
         output = isFreeTrial || planHasClicks;
         cache.setex(key, expirationSeconds, JSON.stringify(output));
