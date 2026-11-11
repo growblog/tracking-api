@@ -8,9 +8,7 @@ beforeAll(async () => {
   await api.ready();
 });
 
-afterAll(() => {
-  api?.close()?.then();
-});
+afterAll(() => api?.close());
 
 describe('GET /views/{viewId}/heartbeat', () => {
   const pushToHeartbeatQueueSpy = jest.spyOn(pushToHeartbeatQueue, 'default');

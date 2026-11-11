@@ -10,9 +10,7 @@ beforeAll(async () => {
   await api.ready();
 });
 
-afterAll(() => {
-  api?.close()?.then();
-});
+afterAll(() => api?.close());
 
 describe('GET /noscript/{blogId}/pixel.gif', () => {
   const getBlogForVisitsSpy = jest.spyOn(getBlogForVisits, 'default');

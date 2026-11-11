@@ -6,9 +6,7 @@ beforeAll(async () => {
   await api.ready();
 });
 
-afterAll(() => {
-  api?.close()?.then();
-});
+afterAll(() => api?.close());
 
 describe('GET /v2/clicks/{blogId}', () => {
   test('should track the click', async () => {

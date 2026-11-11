@@ -2,11 +2,13 @@ import {
   fastify as Fastify,
   FastifyHttpOptions,
   FastifyInstance,
+  LogController,
 } from 'fastify';
 import SECURITY_CONFIG from './config/security.json';
 import LOGGING_CONFIG from './config/logging.json';
 import router from './router';
 import logger from './sources/logger';
+import { closeQueues } from './sources/queues/createQueue';
 
 const isProduction = process.env.NODE_ENV === 'production';
 const isQA = process.env.NODE_ENV === 'qa';
@@ -23,7 +25,9 @@ export default async function build() {
     trustProxy: true,
   };
   if (LOGGING_CONFIG.disableRequestLogging) {
-    options.disableRequestLogging = true;
+    options.logController = new LogController({
+      disableRequestLogging: true,
+    });
   }
   const fastify: FastifyInstance = Fastify(options);
   fastify.addHook('onRequest', (req, reply) => {
@@ -44,6 +48,7 @@ export default async function build() {
   fastify.register(require('fastify-no-icon'));
   fastify.register(require('@fastify/formbody'));
   fastify.register(require('./sources/redis'));
+  fastify.addHook('onClose', () => closeQueues());
   await router(fastify);
   return fastify;
 }

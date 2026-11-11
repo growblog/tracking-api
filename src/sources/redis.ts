@@ -1,10 +1,16 @@
 import redis from 'redis';
 import { FastifyInstance } from 'fastify';
+import logger from './logger';
+import formatError from '../lib/formatError';
+import { getNodeRedisConfig } from './redisConfig';
 
 export let client: redis.RedisClient;
 
 export default async function (fastify: FastifyInstance): Promise<boolean> {
-  client = redis.createClient(getConfig());
+  client = redis.createClient(getNodeRedisConfig());
+  client.on('error', (error) => {
+    logger.error(`Redis client ${formatError(error)}`);
+  });
   client.on('ready', () => {
     fastify.log.info('Redis is ready ✅');
 
@@ -14,23 +20,13 @@ export default async function (fastify: FastifyInstance): Promise<boolean> {
       fastify.log.info('Redis test is OK ✅');
     });
   });
+  fastify.addHook('onClose', (_instance, done) => {
+    client.quit((error) => {
+      if (error) {
+        logger.error(`Redis client quit ${formatError(error)}`);
+      }
+      done();
+    });
+  });
   return true;
-}
-
-export function getConfig(): string {
-  let config: any = {};
-  if (process.env.REDIS_URL) {
-    config.url = process.env.REDIS_URL;
-  } else if (process.env.REDIS_HOST) {
-    config.host = process.env.REDIS_HOST;
-    config.port = parseInt(process.env.REDIS_PORT || '', 10);
-    if (process.env.REDIS_PASSWORD) {
-      config.password = process.env.REDIS_PASSWORD;
-      config.no_ready_check = true;
-      config.tls = {};
-    }
-  } else {
-    console.error('>> Not available process.env.REDIS... 🚨');
-  }
-  return config;
 }

@@ -6,9 +6,7 @@ beforeAll(async () => {
   await api.ready();
 });
 
-afterAll(() => {
-  api?.close()?.then();
-});
+afterAll(() => api?.close());
 
 test('GET /ping', async () => {
   const response = await api.inject({

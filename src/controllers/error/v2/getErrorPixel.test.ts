@@ -6,9 +6,7 @@ beforeAll(async () => {
   await api.ready();
 });
 
-afterAll(() => {
-  api?.close()?.then();
-});
+afterAll(() => api?.close());
 
 describe('GET /v2/blogs/{blogId}/errors', () => {
   test('should track the error', async () => {
