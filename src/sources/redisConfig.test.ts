@@ -26,7 +26,7 @@ describe('redisConfig', () => {
 
     expect(getNodeRedisConfig(env)).toEqual({
       url: 'rediss://default:s3cret@redis.example:25061/2',
-      enable_offline_queue: false,
+      disableOfflineQueue: true,
     });
     expect(getBullmqConnection(env)).toEqual({
       host: 'redis.example',
@@ -43,7 +43,7 @@ describe('redisConfig', () => {
 
     expect(getNodeRedisConfig(env)).toEqual({
       url: 'redis://127.0.0.1:6379',
-      enable_offline_queue: false,
+      disableOfflineQueue: true,
     });
     expect(getBullmqConnection(env)).toEqual({
       host: '127.0.0.1',
@@ -59,12 +59,13 @@ describe('redisConfig', () => {
     };
 
     expect(getNodeRedisConfig(env)).toEqual({
-      host: 'cache.internal',
-      port: 6380,
+      socket: {
+        host: 'cache.internal',
+        port: 6380,
+        tls: true,
+      },
       password: 'test-password',
-      no_ready_check: true,
-      tls: {},
-      enable_offline_queue: false,
+      disableOfflineQueue: true,
     });
     expect(getBullmqConnection(env)).toEqual({
       host: 'cache.internal',
@@ -76,9 +77,11 @@ describe('redisConfig', () => {
 
   test('defaults to localhost:6379 without TLS', () => {
     expect(getNodeRedisConfig({})).toEqual({
-      host: '127.0.0.1',
-      port: 6379,
-      enable_offline_queue: false,
+      socket: {
+        host: '127.0.0.1',
+        port: 6379,
+      },
+      disableOfflineQueue: true,
     });
     expect(getBullmqConnection({})).toEqual({
       host: '127.0.0.1',

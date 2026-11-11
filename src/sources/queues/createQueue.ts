@@ -7,7 +7,15 @@ const openQueues: Queue[] = [];
 
 export async function closeQueues(): Promise<void> {
   const closing = openQueues.splice(0, openQueues.length);
-  await Promise.all(closing.map((queue) => queue.close()));
+  await Promise.all(
+    closing.map(async (queue) => {
+      try {
+        await queue.close();
+      } catch (error) {
+        logger.error(`${queue.name} close ${formatError(error)}`);
+      }
+    })
+  );
 }
 
 export default function createQueue(name: string) {

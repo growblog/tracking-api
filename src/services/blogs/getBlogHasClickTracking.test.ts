@@ -1,6 +1,6 @@
 const mockFirst = jest.fn();
 const mockGet = jest.fn();
-const mockSetex = jest.fn();
+const mockSetEx = jest.fn();
 
 jest.mock('../../sources/postgres', () => ({
   __esModule: true,
@@ -19,14 +19,9 @@ jest.mock('../../sources/postgres', () => ({
 jest.mock('../../sources/redis', () => ({
   __esModule: true,
   client: {
-    get: (key: string, callback: (err: Error | null, value?: string) => void) =>
-      mockGet(key, callback),
-    setex: (
-      key: string,
-      ttl: number,
-      value: string,
-      callback?: (err: Error | null) => void
-    ) => mockSetex(key, ttl, value, callback),
+    get: (key: string) => mockGet(key),
+    setEx: (key: string, ttl: number, value: string) =>
+      mockSetEx(key, ttl, value),
   },
 }));
 
@@ -45,14 +40,12 @@ describe('getBlogHasClickTracking', () => {
   beforeEach(() => {
     mockFirst.mockReset();
     mockGet.mockReset();
-    mockSetex.mockReset();
+    mockSetEx.mockReset();
     jest.mocked(logger.error).mockClear();
   });
 
   test('rejects when postgres fails instead of hanging', async () => {
-    mockGet.mockImplementation((_key, callback) => {
-      callback(null, undefined);
-    });
+    mockGet.mockResolvedValue(null);
     mockFirst.mockRejectedValue(new Error('connect ECONNREFUSED'));
 
     await expect(getBlogHasClickTracking('blog-1')).rejects.toThrow(
@@ -67,41 +60,35 @@ describe('getBlogHasClickTracking', () => {
   });
 
   test('returns a cached flag without querying postgres', async () => {
-    mockGet.mockImplementation((_key, callback) => {
-      callback(null, JSON.stringify(false));
-    });
+    mockGet.mockResolvedValue(JSON.stringify(false));
 
     await expect(getBlogHasClickTracking('blog-1')).resolves.toBe(false);
     expect(mockFirst).not.toHaveBeenCalled();
   });
 
   test('returns false when the user has no plan', async () => {
-    mockGet.mockImplementation((_key, callback) => {
-      callback(null, undefined);
-    });
+    mockGet.mockResolvedValue(null);
     mockFirst
       .mockResolvedValueOnce({ user: 'user-1', firstVisit: null })
       .mockResolvedValueOnce({ trialDays: 14, plan: null });
 
     await expect(getBlogHasClickTracking('blog-1')).resolves.toBe(false);
-    expect(mockSetex).not.toHaveBeenCalled();
+    expect(mockSetEx).not.toHaveBeenCalled();
   });
 
   test('caches click tracking for two minutes', async () => {
-    mockGet.mockImplementation((_key, callback) => {
-      callback(null, undefined);
-    });
+    mockGet.mockResolvedValue(null);
     mockFirst
       .mockResolvedValueOnce({ user: 'user-1', firstVisit: '2000-01-01' })
       .mockResolvedValueOnce({ trialDays: 0, plan: 'plan-1' })
       .mockResolvedValueOnce({ hasClicks: true });
+    mockSetEx.mockResolvedValue('OK');
 
     await expect(getBlogHasClickTracking('blog-1')).resolves.toBe(true);
-    expect(mockSetex).toHaveBeenCalledWith(
+    expect(mockSetEx).toHaveBeenCalledWith(
       'blog:blog-1:hasClickTracking',
       120,
-      JSON.stringify(true),
-      expect.any(Function)
+      JSON.stringify(true)
     );
   });
 });

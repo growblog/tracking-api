@@ -1,14 +1,21 @@
 import logger from './logger';
 
-export interface NodeRedisConfig {
-  host?: string;
-  port?: number;
-  url?: string;
-  password?: string;
-  tls?: object;
-  no_ready_check?: boolean;
-  enable_offline_queue: false;
-}
+export type NodeRedisConfig =
+  | {
+      url: string;
+      disableOfflineQueue: true;
+    }
+  | {
+      socket: {
+        host: string;
+        port: number;
+        tls?: true;
+      };
+      username?: string;
+      password?: string;
+      database?: number;
+      disableOfflineQueue: true;
+    };
 
 export interface BullmqConnection {
   host: string;
@@ -39,20 +46,20 @@ export function getNodeRedisConfig(
   if (resolved.url) {
     return {
       url: resolved.url,
-      enable_offline_queue: false,
+      disableOfflineQueue: true,
     };
   }
-  const config: NodeRedisConfig = {
-    host: resolved.host,
-    port: resolved.port,
-    enable_offline_queue: false,
+  return {
+    socket: {
+      host: resolved.host,
+      port: resolved.port,
+      ...(resolved.password ? { tls: true as const } : {}),
+    },
+    ...(resolved.password ? { password: resolved.password } : {}),
+    ...(resolved.username ? { username: resolved.username } : {}),
+    ...(resolved.db !== undefined ? { database: resolved.db } : {}),
+    disableOfflineQueue: true,
   };
-  if (resolved.password) {
-    config.password = resolved.password;
-    config.no_ready_check = true;
-    config.tls = {};
-  }
-  return config;
 }
 
 export function getBullmqConnection(

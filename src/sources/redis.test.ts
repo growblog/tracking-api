@@ -4,16 +4,16 @@ const mockClient = {
     mockHandlers[event] = callback;
     return mockClient;
   },
-  set: jest.fn(),
-  expire: jest.fn(),
-  get: jest.fn(),
+  connect: jest.fn(async () => undefined),
+  set: jest.fn(async () => 'OK'),
+  get: jest.fn(async () => 'reading'),
+  quit: jest.fn(async () => 'OK'),
+  isOpen: true,
 };
 
 jest.mock('redis', () => ({
   __esModule: true,
-  default: {
-    createClient: jest.fn(() => mockClient),
-  },
+  createClient: jest.fn(() => mockClient),
 }));
 
 jest.mock('./logger', () => ({
@@ -24,7 +24,7 @@ jest.mock('./logger', () => ({
   },
 }));
 
-import redis from 'redis';
+import { createClient } from 'redis';
 import logger from './logger';
 import plugin from './redis';
 
@@ -46,9 +46,10 @@ describe('redis client', () => {
       mockHandlers.error(new Error('ECONNREFUSED'));
     }).not.toThrow();
 
-    expect(redis.createClient).toHaveBeenCalledWith(
-      expect.objectContaining({ enable_offline_queue: false })
+    expect(createClient).toHaveBeenCalledWith(
+      expect.objectContaining({ disableOfflineQueue: true })
     );
+    expect(mockClient.connect).toHaveBeenCalled();
     expect(logger.error).toHaveBeenCalledWith(
       expect.stringContaining('ECONNREFUSED')
     );

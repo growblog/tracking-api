@@ -14,9 +14,8 @@ const isProduction = process.env.NODE_ENV === 'production';
 const isQA = process.env.NODE_ENV === 'qa';
 const importDotenv = !isProduction && !isQA;
 if (importDotenv) {
-  // @ts-ignore
   const dotenv = require('dotenv');
-  dotenv.config();
+  dotenv.config({ quiet: true });
 }
 
 export default async function build() {

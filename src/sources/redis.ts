@@ -1,32 +1,37 @@
-import redis from 'redis';
+import { createClient, RedisClientType } from 'redis';
 import { FastifyInstance } from 'fastify';
 import logger from './logger';
 import formatError from '../lib/formatError';
 import { getNodeRedisConfig } from './redisConfig';
 
-export let client: redis.RedisClient;
+export let client: RedisClientType;
 
 export default async function (fastify: FastifyInstance): Promise<boolean> {
-  client = redis.createClient(getNodeRedisConfig());
+  client = createClient(getNodeRedisConfig());
   client.on('error', (error) => {
     logger.error(`Redis client ${formatError(error)}`);
   });
   client.on('ready', () => {
     fastify.log.info('Redis is ready ✅');
-
-    client.set('testing', 'reading');
-    client.expire('testing', 10);
-    client.get('testing', () => {
-      fastify.log.info('Redis test is OK ✅');
-    });
   });
-  fastify.addHook('onClose', (_instance, done) => {
-    client.quit((error) => {
-      if (error) {
-        logger.error(`Redis client quit ${formatError(error)}`);
+
+  try {
+    await client.connect();
+    await client.set('testing', 'reading', { EX: 10 });
+    await client.get('testing');
+    fastify.log.info('Redis test is OK ✅');
+  } catch (error) {
+    logger.error(`Redis connect ${formatError(error)}`);
+  }
+
+  fastify.addHook('onClose', async () => {
+    try {
+      if (client.isOpen) {
+        await client.quit();
       }
-      done();
-    });
+    } catch (error) {
+      logger.error(`Redis client quit ${formatError(error)}`);
+    }
   });
   return true;
 }

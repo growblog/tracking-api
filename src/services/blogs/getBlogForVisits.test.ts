@@ -1,6 +1,6 @@
 const mockFirst = jest.fn();
 const mockGet = jest.fn();
-const mockSetex = jest.fn();
+const mockSetEx = jest.fn();
 
 jest.mock('../../sources/postgres', () => ({
   __esModule: true,
@@ -19,14 +19,9 @@ jest.mock('../../sources/postgres', () => ({
 jest.mock('../../sources/redis', () => ({
   __esModule: true,
   client: {
-    get: (key: string, callback: (err: Error | null, value?: string) => void) =>
-      mockGet(key, callback),
-    setex: (
-      key: string,
-      ttl: number,
-      value: string,
-      callback?: (err: Error | null) => void
-    ) => mockSetex(key, ttl, value, callback),
+    get: (key: string) => mockGet(key),
+    setEx: (key: string, ttl: number, value: string) =>
+      mockSetEx(key, ttl, value),
   },
 }));
 
@@ -45,14 +40,12 @@ describe('getBlogForVisits', () => {
   beforeEach(() => {
     mockFirst.mockReset();
     mockGet.mockReset();
-    mockSetex.mockReset();
+    mockSetEx.mockReset();
     jest.mocked(logger.error).mockClear();
   });
 
   test('rejects when postgres fails instead of hanging', async () => {
-    mockGet.mockImplementation((_key, callback) => {
-      callback(null, undefined);
-    });
+    mockGet.mockResolvedValue(null);
     mockFirst.mockRejectedValue(new Error('connect ECONNREFUSED'));
 
     await expect(getBlogForVisits('blog-1')).rejects.toThrow('ECONNREFUSED');
@@ -62,9 +55,7 @@ describe('getBlogForVisits', () => {
   });
 
   test('reads postgres when redis get fails', async () => {
-    mockGet.mockImplementation((_key, callback) => {
-      callback(new Error('Redis connection is closed'));
-    });
+    mockGet.mockRejectedValue(new Error('Redis connection is closed'));
     mockFirst.mockResolvedValue({
       id: 'blog-1',
       domain: 'example.com',
@@ -77,12 +68,12 @@ describe('getBlogForVisits', () => {
     expect(logger.error).toHaveBeenCalledWith(
       expect.stringContaining('Redis connection is closed')
     );
-    expect(mockSetex).not.toHaveBeenCalled();
+    expect(mockSetEx).not.toHaveBeenCalled();
   });
 
   test('does not hang when redis never replies', async () => {
     jest.useFakeTimers();
-    mockGet.mockImplementation(() => undefined);
+    mockGet.mockImplementation(() => new Promise(() => undefined));
     mockFirst.mockResolvedValue({
       id: 'blog-1',
       firstVisit: null,
@@ -101,45 +92,38 @@ describe('getBlogForVisits', () => {
   });
 
   test('returns a cached blog and keeps the two minute ttl on write', async () => {
-    mockGet.mockImplementation((_key, callback) => {
-      callback(null, JSON.stringify({ id: 'blog-1', domain: 'example.com' }));
-    });
+    mockGet.mockResolvedValue(
+      JSON.stringify({ id: 'blog-1', domain: 'example.com' })
+    );
 
     await expect(getBlogForVisits('blog-1')).resolves.toMatchObject({
       id: 'blog-1',
     });
     expect(mockFirst).not.toHaveBeenCalled();
 
-    mockGet.mockImplementation((_key, callback) => {
-      callback(null, undefined);
-    });
+    mockGet.mockResolvedValue(null);
     mockFirst.mockResolvedValue({
       id: 'blog-1',
       firstVisit: '2020-01-01',
     });
+    mockSetEx.mockResolvedValue('OK');
     await getBlogForVisits('blog-1');
-    expect(mockSetex).toHaveBeenCalledWith(
+    expect(mockSetEx).toHaveBeenCalledWith(
       'blog:blog-1:for_visits',
       120,
-      expect.any(String),
-      expect.any(Function)
+      expect.any(String)
     );
   });
 
   test('reads a double-encoded cache value and falls through when it is corrupt', async () => {
-    mockGet.mockImplementation((_key, callback) => {
-      callback(
-        null,
-        JSON.stringify(JSON.stringify({ id: 'blog-1', domain: 'example.com' }))
-      );
-    });
+    mockGet.mockResolvedValue(
+      JSON.stringify(JSON.stringify({ id: 'blog-1', domain: 'example.com' }))
+    );
     await expect(getBlogForVisits('blog-1')).resolves.toMatchObject({
       id: 'blog-1',
     });
 
-    mockGet.mockImplementation((_key, callback) => {
-      callback(null, '{not-json');
-    });
+    mockGet.mockResolvedValue('{not-json');
     mockFirst.mockResolvedValue({ id: 'blog-2', firstVisit: null });
     await expect(getBlogForVisits('blog-1')).resolves.toMatchObject({
       id: 'blog-2',
