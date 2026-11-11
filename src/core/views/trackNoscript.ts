@@ -5,6 +5,7 @@ import getBlogFilters from '../../services/blogs/getBlogFilters';
 import getBlogForVisits from '../../services/blogs/getBlogForVisits';
 import getSlug from './getSlug';
 import isPreview from './isPreview';
+import isAllowedReferer from './isAllowedReferer';
 
 export default async function trackNoscript(
   blogId: string,
@@ -30,6 +31,9 @@ export default async function trackNoscript(
   }
   const isEnabled = blog.enableClient === true;
   if (!isEnabled) {
+    return false;
+  }
+  if (!isAllowedReferer(blog.domain, blog.newDomain, path)) {
     return false;
   }
   const isIpBlocked = userIp && ipFilters?.includes(userIp);

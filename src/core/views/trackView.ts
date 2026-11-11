@@ -9,6 +9,7 @@ import getBlogHasClickTracking from '../../services/blogs/getBlogHasClickTrackin
 import getSlug from './getSlug';
 import isPreview from './isPreview';
 import generateVisitorHash from './generateVisitorHash';
+import isAllowedReferer from './isAllowedReferer';
 
 export default async function trackView(
   blogId: string,
@@ -56,16 +57,7 @@ export default async function trackView(
     error.description = 'Please reactivate your blog on Growblog.io';
     throw error;
   }
-  const normalizedDomain = blog.domain?.replace(/^www\./, '');
-  const normalizedOrigin = requestReferer?.replace(/^www\./, '');
-  const domainsMatch =
-    blog.domain &&
-    requestReferer &&
-    normalizedOrigin.includes(normalizedDomain);
-  const refererIsGhostPro = requestReferer && requestReferer.includes('.ghost.io');
-  const domainIsGhostPro = blog.domain && blog.domain.includes('.ghost.io');
-  const isWrong = blog.domain && !domainsMatch && (!refererIsGhostPro || !domainIsGhostPro);
-  if (isWrong) {
+  if (!isAllowedReferer(blog.domain, blog.newDomain, requestReferer)) {
     const error: any = new Error('INVALID_REFERER');
     error.statusCode = 400;
     error.description = `Not allowed to track from ${requestReferer}`;

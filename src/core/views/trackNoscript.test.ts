@@ -128,4 +128,41 @@ describe('core/views/trackNoscript', () => {
     expect(output).toEqual(true);
     expect(pushToNoscriptQueueSpy).toHaveBeenCalled();
   });
+
+  test('should track the noscript view from the blog host', async () => {
+    getBlogForVisitsSpy.mockReturnValue(
+      Promise.resolve({ enableClient: true, domain: 'example.com' })
+    );
+    getBlogFiltersSpy.mockReturnValue(Promise.resolve([]));
+    pushToNoscriptQueueSpy.mockImplementation(() => Promise.resolve(true));
+    const useragent =
+      'Mozilla/5.0 (platform; rv:geckoversion) Gecko/geckotrail Firefox/firefoxversion';
+    const output = await trackNoscript(
+      'test',
+      'https://www.example.com/post',
+      useragent,
+      'es',
+      undefined
+    );
+    expect(output).toEqual(true);
+  });
+
+  test('should not track the noscript view from another host', async () => {
+    pushToNoscriptQueueSpy.mockClear();
+    getBlogForVisitsSpy.mockReturnValue(
+      Promise.resolve({ enableClient: true, domain: 'example.com' })
+    );
+    getBlogFiltersSpy.mockReturnValue(Promise.resolve([]));
+    const useragent =
+      'Mozilla/5.0 (platform; rv:geckoversion) Gecko/geckotrail Firefox/firefoxversion';
+    const output = await trackNoscript(
+      'test',
+      'https://evilexample.com/post',
+      useragent,
+      'es',
+      undefined
+    );
+    expect(output).toEqual(false);
+    expect(pushToNoscriptQueueSpy).not.toHaveBeenCalled();
+  });
 });

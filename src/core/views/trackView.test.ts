@@ -214,4 +214,110 @@ describe('core/views/trackView', () => {
     expect(output.tc).toEqual(1);
     expect(pushToQueueSpy).toHaveBeenCalled();
   });
+
+  test('should track the view when the referer host matches exactly', async () => {
+    const output = await trackWithReferer(
+      'example.com',
+      'https://example.com/posts/hello?utm=1'
+    );
+    expect(output).toHaveProperty('id');
+    expect(pushToQueueSpy).toHaveBeenCalled();
+  });
+
+  test('should track the view when the referer host is www and the query contains another domain', async () => {
+    const output = await trackWithReferer(
+      'example.com',
+      'https://www.example.com/hello?next=https://example.com.evil.com'
+    );
+    expect(output).toHaveProperty('id');
+    expect(pushToQueueSpy).toHaveBeenCalled();
+  });
+
+  test('should track the view from a legitimate subdomain', async () => {
+    const output = await trackWithReferer(
+      'example.com',
+      'https://blog.example.com/post'
+    );
+    expect(output).toHaveProperty('id');
+  });
+
+  test('should not track the view when the referer only prefixes the domain', async () => {
+    await expectInvalidReferer('example.com', 'https://evilexample.com/');
+  });
+
+  test('should not track the view when the domain is a label of another host', async () => {
+    await expectInvalidReferer('example.com', 'https://example.com.evil.com/');
+  });
+
+  test('should not track the view when the domain is only in the query string', async () => {
+    await expectInvalidReferer(
+      'example.com',
+      'https://evil.com/?next=https://example.com'
+    );
+  });
+
+  test('should not track the view when the domain is only userinfo on another host', async () => {
+    await expectInvalidReferer('example.com', 'https://example.com@evil.com/');
+  });
+
+  test('should not track the apex when the blog domain is a subdomain', async () => {
+    await expectInvalidReferer('blog.example.com', 'https://example.com/');
+  });
+
+  test('should track the view from another ghost.io host', async () => {
+    const output = await trackWithReferer(
+      'my-site.ghost.io',
+      'https://preview.ghost.io/welcome'
+    );
+    expect(output).toHaveProperty('id');
+  });
+
+  test('should not track a ghost.io blog from a referer that only mentions ghost.io in the query', async () => {
+    await expectInvalidReferer(
+      'my-site.ghost.io',
+      'https://evil.com/?next=https://foo.ghost.io'
+    );
+  });
+
+  test('should track the view from newDomain', async () => {
+    const output = await trackWithReferer(
+      'old.example.com',
+      'https://new.example.com/post',
+      { newDomain: 'new.example.com' }
+    );
+    expect(output).toHaveProperty('id');
+    expect(pushToQueueSpy).toHaveBeenCalled();
+  });
+
+  async function trackWithReferer(
+    domain: string,
+    referer: string,
+    blog: Record<string, unknown> = {}
+  ) {
+    pushToQueueSpy.mockClear();
+    getBlogFiltersSpy.mockReturnValue(Promise.resolve([]));
+    getBlogForVisitsSpy.mockReturnValue(
+      Promise.resolve({ enableClient: true, domain, ...blog })
+    );
+    getBlogHasClickTrackingSpy.mockReturnValue(Promise.resolve(false));
+    pushToQueueSpy.mockImplementation(() => Promise.resolve(true));
+    return trackView(
+      'test',
+      '/',
+      referer,
+      '',
+      '',
+      'Mozilla/5.0 (platform; rv:geckoversion) Gecko/geckotrail Firefox/firefoxversion',
+      '12.34.56.78',
+      {}
+    );
+  }
+
+  async function expectInvalidReferer(domain: string, referer: string) {
+    await expect(trackWithReferer(domain, referer)).rejects.toMatchObject({
+      message: 'INVALID_REFERER',
+      statusCode: 400,
+    });
+    expect(pushToQueueSpy).not.toHaveBeenCalled();
+  }
 });
