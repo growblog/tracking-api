@@ -1,5 +1,6 @@
 import TrackingViewQueue from '../../sources/queues/TrackingViewQueue';
 import logger from '../../sources/logger';
+import formatError from '../../lib/formatError';
 
 export default async function pushToQueue(input): Promise<any> {
   try {
@@ -16,7 +17,7 @@ export default async function pushToQueue(input): Promise<any> {
     return await TrackingViewQueue.add(jobId, item, options);
   } catch (error: any) {
     logger.error(
-      `views.pushToQueue(${JSON.stringify(input)}) Error = ${error?.trace || error}`
+      `views.pushToQueue(${JSON.stringify(input)}) ${formatError(error)}`
     );
   }
 }

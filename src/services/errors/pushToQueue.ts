@@ -1,5 +1,6 @@
 import TrackingErrorQueue from '../../sources/queues/TrackingErrorQueue';
 import logger from '../../sources/logger';
+import formatError from '../../lib/formatError';
 
 export default async function pushToErrorQueue(input) {
   try {
@@ -16,7 +17,7 @@ export default async function pushToErrorQueue(input) {
     return await TrackingErrorQueue.add(`item-${jobId}`, item, options);
   } catch (error: any) {
     logger.error(
-      `errors.pushToQueue(${JSON.stringify(input)}) Error = ${error?.trace || error}`
+      `errors.pushToQueue(${JSON.stringify(input)}) ${formatError(error)}`
     );
   }
 }

@@ -1,5 +1,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import trackView from '../../../core/views/trackView';
+import logger from '../../../sources/logger';
+import formatError from '../../../lib/formatError';
 
 export default function (fastify: FastifyInstance) {
   fastify.route({
@@ -12,8 +14,8 @@ export default function (fastify: FastifyInstance) {
       const params = req.params as any;
       const body = req.body as any;
       const { blogId } = params;
-      const useragent = req.headers['user-agent'] || '';
-      const requestReferer = req.headers['referer'] || '';
+      const useragent = headerValue(req.headers['user-agent']);
+      const requestReferer = headerValue(req.headers['referer']);
       const lang = body.C;
       const viewReferer = body.D;
       const path = body.U;
@@ -31,10 +33,20 @@ export default function (fastify: FastifyInstance) {
         );
         return res.code(200).send(output);
       } catch (error: any) {
-        const { statusCode = 500, message } = error;
-        const output = message || '';
-        return res.code(statusCode).send(output);
+        const statusCode = error?.statusCode || 500;
+        if (statusCode >= 500) {
+          logger.error(`POST /v3/views/${blogId} ${formatError(error)}`);
+          return res.code(statusCode).send('Internal Server Error');
+        }
+        return res.code(statusCode).send(error?.message || '');
       }
     },
   });
+}
+
+function headerValue(value: string | string[] | undefined): string {
+  if (Array.isArray(value)) {
+    return value[0] || '';
+  }
+  return value || '';
 }

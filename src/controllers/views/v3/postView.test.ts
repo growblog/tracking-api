@@ -1,5 +1,6 @@
 import { jest } from '@jest/globals';
 import build from '../../../api';
+import logger from '../../../sources/logger';
 import * as pushToQueue from '../../../services/views/pushToQueue';
 import * as getBlogForVisits from '../../../services/blogs/getBlogForVisits';
 import * as getBlogFilters from '../../../services/blogs/getBlogFilters';
@@ -11,9 +12,7 @@ beforeAll(async () => {
   await api.ready();
 });
 
-afterAll(() => {
-  api?.close()?.then();
-});
+afterAll(() => api?.close());
 
 describe('POST /v3/views/{blogId}', () => {
   const getBlogForVisitsSpy = jest.spyOn(getBlogForVisits, 'default');
@@ -190,5 +189,30 @@ describe('POST /v3/views/{blogId}', () => {
     expect(output).toHaveProperty('tc');
     expect(output.tc).toEqual(1);
     expect(pushToQueueSpy).toHaveBeenCalled();
+  });
+
+  test('returns 500 without the driver error when postgres fails', async () => {
+    const errorSpy = jest
+      .spyOn(logger, 'error')
+      .mockImplementation(() => logger);
+    getBlogForVisitsSpy.mockRejectedValue(
+      new Error('connect ECONNREFUSED user=secret')
+    );
+    getBlogFiltersSpy.mockResolvedValue([]);
+    getBlogHasClickTrackingSpy.mockResolvedValue(false);
+    const response = await api.inject({
+      method: 'POST',
+      url: '/v3/views/test',
+      headers: {
+        'User-Agent': useragent,
+        Referer: 'https://example.com',
+      },
+      payload: {},
+    });
+    expect(response.statusCode).toEqual(500);
+    expect(response.body).toEqual('Internal Server Error');
+    expect(response.body).not.toContain('secret');
+    expect(errorSpy).toHaveBeenCalled();
+    errorSpy.mockRestore();
   });
 });

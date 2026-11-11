@@ -1,6 +1,7 @@
 import turboGeoip from 'turbo-geoip-country';
 import pushToQueue from '../../services/clicks/pushToQueue';
 import logger from '../../sources/logger';
+import formatError from '../../lib/formatError';
 
 export default async function trackClick(
   blogId: string,
@@ -27,7 +28,7 @@ export default async function trackClick(
     return await pushToQueue(params);
   } catch (error: any) {
     logger.error(
-      `trackClick(${blogId}, ${origin}, ${target}, ${title}, ${text}, ${image}, ${useragent}) Error = ${error?.trace || error}`
+      `trackClick(${blogId}, ${origin}, ${target}) ${formatError(error)}`
     );
   }
 }

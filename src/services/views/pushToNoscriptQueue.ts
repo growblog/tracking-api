@@ -1,5 +1,6 @@
 import TrackingNoscriptViewQueue from '../../sources/queues/TrackingNoscriptViewQueue';
 import logger from '../../sources/logger';
+import formatError from '../../lib/formatError';
 
 export default async function pushToNoscriptQueue(input): Promise<any> {
   try {
@@ -17,7 +18,7 @@ export default async function pushToNoscriptQueue(input): Promise<any> {
     return await TrackingNoscriptViewQueue.add(jobId, item, options);
   } catch (error: any) {
     logger.error(
-      `errors.pushToNoscriptQueue(${JSON.stringify(input)}) Error = ${error?.trace || error}`
+      `views.pushToNoscriptQueue(${JSON.stringify(input)}) ${formatError(error)}`
     );
   }
 }

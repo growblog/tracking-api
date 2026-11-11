@@ -1,5 +1,6 @@
 import TrackingViewHeartbeatQueue from '../../sources/queues/TrackingViewHeartbeatQueue';
 import logger from '../../sources/logger';
+import formatError from '../../lib/formatError';
 
 export default async function pushToHeartbeatQueue(input): Promise<any> {
   try {
@@ -16,7 +17,7 @@ export default async function pushToHeartbeatQueue(input): Promise<any> {
     return await TrackingViewHeartbeatQueue.add(jobId, item, options);
   } catch (error: any) {
     logger.error(
-      `errors.pushToHeartbeatQueue(${JSON.stringify(input)}) Error = ${error?.trace || error}`
+      `views.pushToHeartbeatQueue(${JSON.stringify(input)}) ${formatError(error)}`
     );
   }
 }
