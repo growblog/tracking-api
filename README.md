@@ -1,47 +1,47 @@
 # Tracking API
 
-This is the [Ghostboard.io](https://ghostboard.io) Tracking API that receives the tracking data (such as views, clicks on text/images and scrolling) from Ghost blogs
+This is the [Growblog.io](https://growblog.io) Tracking API that receives the tracking data (such as views, clicks on text/images and scrolling) from Ghost blogs
 
 ## Getting started ✨
 
-- [Start your free trial](https://ghostboard.io)
+- [Start your free trial](https://growblog.io)
 
 ## Tests 🧪
 
 ```
-Test Suites: 14 passed, 14 total
-Tests:       84 passed, 84 total
+Test Suites: 19 passed, 19 total
+Tests:       117 passed, 117 total
 Snapshots:   0 total
-Time:        3.057 s
+Time:        3.003 s
 ```
 
 ## Dependencies 📦
 
 ```
 -------------------------------------------------
-| Dependency          | Time  | Size   | # Deps |
+| Dependency          | Size   | Version |
 -------------------------------------------------
-| @newrelic/fastify   | 8s    | 72 MB  | 139    |
-| fast-glob           | 1.5s  | 532 KB | 16     |
-| pino-pretty         | 1.5s  | 856 KB | 20     |
-| fastify-no-icon     | 1.4s  | 49 KB  | 2      |
-| fastify             | 1.4s  | 7.2 MB | 42     |
-| bullmq              | 1.4s  | 10 MB  | 24     |
-| winston             | 1.2s  | 1.9 MB | 28     |
-| @fastify/cors       | 1.2s  | 215 KB | 3      |
-| pg                  | 1.1s  | 451 KB | 14     |
-| redis               | 983ms | 283 KB | 5      |
-| @fastify/formbody   | 978ms | 92 KB  | 4      |
-| knex                | 963ms | 3.3 MB | 23     |
-| turbo-geoip-country | 841ms | 30 MB  | 2      |
-| moment              | 815ms | 4.4 MB | 1      |
-| isbot               | 809ms | 31 KB  | 1      |
-| fastify-plugin      | 790ms | 45 KB  | 1      |
-| ipaddr.js           | 773ms | 63 KB  | 1      |
-| @fastify/helmet     | 668ms | 220 KB | 3      |
-| uuid                | 627ms | 140 KB | 2      |
+| turbo-geoip-country | 21.6 MB | 26.10.0 |
+| moment              | 4.3 MB  | 2.31.0  |
+| bullmq              | 3.4 MB  | 6.7.4   |
+| fastify             | 2.9 MB  | 5.12.8  |
+| newrelic            | 1.9 MB  | 11.23.2 |
+| knex                | 0.94 MB | 3.3.0   |
+| ioredis             | 0.82 MB | 5.11.1  |
+| pino-pretty         | 0.39 MB | 13.2.0  |
+| redis               | 0.29 MB | 6.3.1   |
+| winston             | 0.26 MB | 3.19.0  |
+| @fastify/cors       | 0.12 MB | 11.4.1  |
+| pg                  | 0.11 MB | 8.23.1  |
+| fast-glob           | 0.10 MB | 3.3.3   |
+| @fastify/helmet     | 0.07 MB | 13.2.0  |
+| uuid                | 0.06 MB | 14.0.3  |
+| ipaddr.js           | 0.06 MB | 2.5.0   |
+| isbot               | 0.05 MB | 5.2.3   |
+| fastify-no-icon     | 0.04 MB | 7.0.0   |
+| fastify-plugin      | 0.04 MB | 6.0.1   |
+| @newrelic/fastify   | 0.03 MB | git     |
+| @fastify/formbody   | 0.02 MB | 9.0.1   |
 -------------------------------------------------
-Total time (non-deduped): 26.8s
-Total size (non-deduped): 132 MB
-
+Total size (top-level): 37.5 MB
 ```
