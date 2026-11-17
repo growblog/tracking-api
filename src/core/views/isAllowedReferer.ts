@@ -1,19 +1,37 @@
 export default function isAllowedReferer(
   domain: string | null | undefined,
   newDomain: string | null | undefined,
-  referer: string | null | undefined
+  referer: string | null | undefined,
+  origin?: string | null | undefined
 ): boolean {
   if (!domain) {
     return true;
   }
   const refererHost = referer ? canonicalHost(referer) : null;
   if (!refererHost) {
-    return false;
+    // Missing Referer is common with no-referrer / privacy tools — accept the visit.
+    // When Origin is present, validate that instead.
+    if (!origin) {
+      return true;
+    }
+    const originHost = canonicalHost(origin);
+    if (!originHost) {
+      return true;
+    }
+    return isAllowedHost(domain, newDomain, originHost);
   }
-  if (isSameSite(domain, refererHost) || isSameSite(newDomain, refererHost)) {
+  return isAllowedHost(domain, newDomain, refererHost);
+}
+
+function isAllowedHost(
+  domain: string | null | undefined,
+  newDomain: string | null | undefined,
+  host: string
+): boolean {
+  if (isSameSite(domain, host) || isSameSite(newDomain, host)) {
     return true;
   }
-  return isGhostPair(domain, refererHost) || isGhostPair(newDomain, refererHost);
+  return isGhostPair(domain, host) || isGhostPair(newDomain, host);
 }
 
 function isSameSite(
@@ -35,12 +53,16 @@ function isSameSite(
   return host.endsWith(`.${domain}`);
 }
 
+/** Same Ghost(Pro) subdomain only — not any *.ghost.io for any blog. */
 function isGhostPair(
   configured: string | null | undefined,
   refererHost: string
 ): boolean {
   const configuredHost = configured ? canonicalHost(configured) : null;
-  return isGhostHost(refererHost) && isGhostHost(configuredHost);
+  if (!isGhostHost(refererHost) || !isGhostHost(configuredHost)) {
+    return false;
+  }
+  return stripWww(configuredHost!) === stripWww(refererHost);
 }
 
 function isGhostHost(host: string | null): boolean {

@@ -19,7 +19,8 @@ export default async function trackView(
   lang: string,
   useragent: string,
   userIp: string,
-  body: any
+  body: any,
+  requestOrigin: string = ''
 ): Promise<any> {
   if (!blogId) {
     const error: any = new Error('INVALID_BLOG_ID');
@@ -57,10 +58,17 @@ export default async function trackView(
     error.description = 'Please reactivate your blog on Growblog.io';
     throw error;
   }
-  if (!isAllowedReferer(blog.domain, blog.newDomain, requestReferer)) {
+  if (
+    !isAllowedReferer(
+      blog.domain,
+      blog.newDomain,
+      requestReferer,
+      requestOrigin
+    )
+  ) {
     const error: any = new Error('INVALID_REFERER');
     error.statusCode = 400;
-    error.description = `Not allowed to track from ${requestReferer}`;
+    error.description = `Not allowed to track from ${requestReferer || requestOrigin || 'unknown origin'}`;
     throw error;
   }
   const isPrivateIP = libIP.parse(userIp).range() === 'private';

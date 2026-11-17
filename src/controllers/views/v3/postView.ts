@@ -16,6 +16,7 @@ export default function (fastify: FastifyInstance) {
       const { blogId } = params;
       const useragent = headerValue(req.headers['user-agent']);
       const requestReferer = headerValue(req.headers['referer']);
+      const requestOrigin = headerValue(req.headers['origin']);
       const lang = body.C;
       const viewReferer = body.D;
       const path = body.U;
@@ -29,7 +30,8 @@ export default function (fastify: FastifyInstance) {
           lang,
           useragent,
           userIp,
-          body
+          body,
+          requestOrigin
         );
         return res.code(200).send(output);
       } catch (error: any) {

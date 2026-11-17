@@ -264,12 +264,19 @@ describe('core/views/trackView', () => {
     await expectInvalidReferer('blog.example.com', 'https://example.com/');
   });
 
-  test('should track the view from another ghost.io host', async () => {
+  test('should track the view from the same ghost.io subdomain', async () => {
     const output = await trackWithReferer(
+      'my-site.ghost.io',
+      'https://my-site.ghost.io/welcome'
+    );
+    expect(output).toHaveProperty('id');
+  });
+
+  test('should not track from a different ghost.io subdomain', async () => {
+    await expectInvalidReferer(
       'my-site.ghost.io',
       'https://preview.ghost.io/welcome'
     );
-    expect(output).toHaveProperty('id');
   });
 
   test('should not track a ghost.io blog from a referer that only mentions ghost.io in the query', async () => {
@@ -289,10 +296,32 @@ describe('core/views/trackView', () => {
     expect(pushToQueueSpy).toHaveBeenCalled();
   });
 
+  test('should track the view when Referer is missing', async () => {
+    const output = await trackWithReferer('example.com', '');
+    expect(output).toHaveProperty('id');
+    expect(pushToQueueSpy).toHaveBeenCalled();
+  });
+
+  test('should track the view when Referer is missing but Origin matches', async () => {
+    const output = await trackWithReferer('example.com', '', {}, 'https://example.com');
+    expect(output).toHaveProperty('id');
+  });
+
+  test('should not track when Referer is missing and Origin is foreign', async () => {
+    await expect(
+      trackWithReferer('example.com', '', {}, 'https://evil.com')
+    ).rejects.toMatchObject({
+      message: 'INVALID_REFERER',
+      statusCode: 400,
+    });
+    expect(pushToQueueSpy).not.toHaveBeenCalled();
+  });
+
   async function trackWithReferer(
     domain: string,
     referer: string,
-    blog: Record<string, unknown> = {}
+    blog: Record<string, unknown> = {},
+    origin: string = ''
   ) {
     pushToQueueSpy.mockClear();
     getBlogFiltersSpy.mockReturnValue(Promise.resolve([]));
@@ -309,7 +338,8 @@ describe('core/views/trackView', () => {
       '',
       'Mozilla/5.0 (platform; rv:geckoversion) Gecko/geckotrail Firefox/firefoxversion',
       '12.34.56.78',
-      {}
+      {},
+      origin
     );
   }
 
