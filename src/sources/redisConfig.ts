@@ -1,14 +1,21 @@
 import logger from './logger';
 
+/** Bound Redis cache connect so startup never hangs on an unreachable host. */
+export const REDIS_CONNECT_TIMEOUT_MS = 5_000;
+
 export type NodeRedisConfig =
   | {
       url: string;
+      socket: {
+        connectTimeout: number;
+      };
       disableOfflineQueue: true;
     }
   | {
       socket: {
         host: string;
         port: number;
+        connectTimeout: number;
         tls?: true;
       };
       username?: string;
@@ -24,6 +31,9 @@ export interface BullmqConnection {
   password?: string;
   db?: number;
   tls?: object;
+  /** Producer queues must fail fast — never wait forever while Redis is down. */
+  enableOfflineQueue: false;
+  maxRetriesPerRequest: number;
 }
 
 interface ResolvedRedis {
@@ -46,6 +56,9 @@ export function getNodeRedisConfig(
   if (resolved.url) {
     return {
       url: resolved.url,
+      socket: {
+        connectTimeout: REDIS_CONNECT_TIMEOUT_MS,
+      },
       disableOfflineQueue: true,
     };
   }
@@ -53,6 +66,7 @@ export function getNodeRedisConfig(
     socket: {
       host: resolved.host,
       port: resolved.port,
+      connectTimeout: REDIS_CONNECT_TIMEOUT_MS,
       ...(resolved.password ? { tls: true as const } : {}),
     },
     ...(resolved.password ? { password: resolved.password } : {}),
@@ -69,6 +83,8 @@ export function getBullmqConnection(
   const connection: BullmqConnection = {
     host: resolved.host,
     port: resolved.port,
+    enableOfflineQueue: false,
+    maxRetriesPerRequest: 1,
   };
   if (resolved.username) {
     connection.username = resolved.username;

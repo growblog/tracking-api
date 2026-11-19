@@ -1,4 +1,4 @@
-import { Queue } from 'bullmq';
+import { Queue, QueueOptions } from 'bullmq';
 import logger from '../logger';
 import formatError from '../../lib/formatError';
 import { getBullmqConnection } from '../redisConfig';
@@ -14,8 +14,24 @@ export async function closeQueues(): Promise<void> {
       } catch (error) {
         logger.error(`${queue.name} close ${formatError(error)}`);
       }
+      try {
+        // Stop ioredis reconnect timers after fail-fast tests against a dead Redis.
+        await queue.disconnect();
+      } catch {
+        // Redis may already be unreachable; ignore disconnect errors.
+      }
     })
   );
+}
+
+/** Producer options: fail fast when Redis is down (never hold HTTP requests open). */
+export function buildQueueOptions(
+  env: NodeJS.ProcessEnv = process.env
+): QueueOptions {
+  return {
+    connection: getBullmqConnection(env),
+    skipWaitingForReady: true,
+  };
 }
 
 export default function createQueue(name: string) {
@@ -23,9 +39,8 @@ export default function createQueue(name: string) {
 
   function getQueue(): Queue {
     if (!queue) {
-      queue = new Queue(name, {
-        connection: getBullmqConnection(),
-      });
+      // See https://docs.bullmq.io/patterns/failing-fast-when-redis-is-down
+      queue = new Queue(name, buildQueueOptions());
       queue.on('error', (error: Error) => {
         logger.error(`${name} ${formatError(error)}`);
       });

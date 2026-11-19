@@ -10,6 +10,7 @@ import logger from './logger';
 import {
   getBullmqConnection,
   getNodeRedisConfig,
+  REDIS_CONNECT_TIMEOUT_MS,
 } from './redisConfig';
 
 describe('redisConfig', () => {
@@ -26,6 +27,9 @@ describe('redisConfig', () => {
 
     expect(getNodeRedisConfig(env)).toEqual({
       url: 'rediss://default:s3cret@redis.example:25061/2',
+      socket: {
+        connectTimeout: REDIS_CONNECT_TIMEOUT_MS,
+      },
       disableOfflineQueue: true,
     });
     expect(getBullmqConnection(env)).toEqual({
@@ -35,6 +39,8 @@ describe('redisConfig', () => {
       password: 's3cret',
       db: 2,
       tls: {},
+      enableOfflineQueue: false,
+      maxRetriesPerRequest: 1,
     });
   });
 
@@ -43,11 +49,16 @@ describe('redisConfig', () => {
 
     expect(getNodeRedisConfig(env)).toEqual({
       url: 'redis://127.0.0.1:6379',
+      socket: {
+        connectTimeout: REDIS_CONNECT_TIMEOUT_MS,
+      },
       disableOfflineQueue: true,
     });
     expect(getBullmqConnection(env)).toEqual({
       host: '127.0.0.1',
       port: 6379,
+      enableOfflineQueue: false,
+      maxRetriesPerRequest: 1,
     });
   });
 
@@ -62,6 +73,7 @@ describe('redisConfig', () => {
       socket: {
         host: 'cache.internal',
         port: 6380,
+        connectTimeout: REDIS_CONNECT_TIMEOUT_MS,
         tls: true,
       },
       password: 'test-password',
@@ -72,6 +84,8 @@ describe('redisConfig', () => {
       port: 6380,
       password: 'test-password',
       tls: {},
+      enableOfflineQueue: false,
+      maxRetriesPerRequest: 1,
     });
   });
 
@@ -80,12 +94,15 @@ describe('redisConfig', () => {
       socket: {
         host: '127.0.0.1',
         port: 6379,
+        connectTimeout: REDIS_CONNECT_TIMEOUT_MS,
       },
       disableOfflineQueue: true,
     });
     expect(getBullmqConnection({})).toEqual({
       host: '127.0.0.1',
       port: 6379,
+      enableOfflineQueue: false,
+      maxRetriesPerRequest: 1,
     });
   });
 
@@ -99,6 +116,8 @@ describe('redisConfig', () => {
     expect(connection).toEqual({
       host: 'cache.example',
       port: 6390,
+      enableOfflineQueue: false,
+      maxRetriesPerRequest: 1,
     });
   });
 
@@ -112,6 +131,8 @@ describe('redisConfig', () => {
     expect(connection).toEqual({
       host: 'cache.internal',
       port: 6379,
+      enableOfflineQueue: false,
+      maxRetriesPerRequest: 1,
     });
     const logged = jest.mocked(logger.error).mock.calls.flat().join(' ');
     expect(logged).toContain('REDIS_URL');
