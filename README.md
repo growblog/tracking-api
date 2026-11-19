@@ -9,10 +9,10 @@ This is the [Growblog.io](https://growblog.io) Tracking API that receives the tr
 ## Tests 🧪
 
 ```
-Test Suites: 23 passed, 23 total
-Tests:       139 passed, 139 total
+Test Suites: 25 passed, 25 total
+Tests:       147 passed, 147 total
 Snapshots:   0 total
-Time:        2.962 s
+Time:        5.845 s
 ```
 
 ## Dependencies 📦

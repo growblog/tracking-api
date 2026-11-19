@@ -3,7 +3,8 @@ import formatError from '../../lib/formatError';
 
 /** Initial attempt + 2 short retries before discarding. */
 export const DEFAULT_MAX_ATTEMPTS = 3;
-export const DEFAULT_RETRY_DELAY_MS = 50;
+/** Covers brief ioredis reconnects without holding tracking requests open long. */
+export const DEFAULT_RETRY_DELAY_MS = 100;
 
 const discardedCounts = new Map<string, number>();
 

@@ -9,7 +9,12 @@ export default async function start() {
       require('newrelic');
     }
     const build = require('./api').default;
+    const warmProducerQueues =
+      require('./sources/queues/warmProducerQueues').default;
     api = await build();
+    // Warm BullMQ before listen so ALB/ECS never routes traffic while
+    // enableOfflineQueue=false would discard tracking jobs.
+    await warmProducerQueues();
     const options = {
       port: process.env.PORT,
       host: '0.0.0.0',

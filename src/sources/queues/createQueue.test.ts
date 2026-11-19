@@ -21,6 +21,7 @@ describe('createQueue', () => {
       REDIS_PORT: '6379',
     });
 
+    // Without a warmed shared client, options carry host connection settings.
     expect(options).toMatchObject({
       skipWaitingForReady: true,
       connection: {
@@ -41,6 +42,12 @@ describe('createQueue', () => {
     const startedAt = Date.now();
     await expect(queueApi.add('job', { ok: false })).rejects.toBeDefined();
     expect(Date.now() - startedAt).toBeLessThan(5_000);
+  });
+
+  test('exposes name and waitUntilReady for startup warmup', () => {
+    const queueApi = createQueue(`warmup-api-${Date.now()}`);
+    expect(queueApi.name).toContain('warmup-api-');
+    expect(typeof queueApi.waitUntilReady).toBe('function');
   });
 });
 

@@ -2,6 +2,10 @@ import { Queue, QueueOptions } from 'bullmq';
 import logger from '../logger';
 import formatError from '../../lib/formatError';
 import { getBullmqConnection } from '../redisConfig';
+import {
+  closeSharedBullmqRedis,
+  getSharedBullmqRedis,
+} from './bullmqRedis';
 
 const openQueues: Queue[] = [];
 
@@ -22,19 +26,34 @@ export async function closeQueues(): Promise<void> {
       }
     })
   );
+  await closeSharedBullmqRedis();
 }
 
 /** Producer options: fail fast when Redis is down (never hold HTTP requests open). */
 export function buildQueueOptions(
   env: NodeJS.ProcessEnv = process.env
 ): QueueOptions {
+  const shared = getSharedBullmqRedis();
   return {
-    connection: getBullmqConnection(env),
+    // Prefer the warmed shared client so BullMQ never races INFO against a
+    // half-open socket (skipWaitingForReady + enableOfflineQueue=false).
+    connection: shared ?? getBullmqConnection(env),
     skipWaitingForReady: true,
   };
 }
 
-export default function createQueue(name: string) {
+export interface ProducerQueue {
+  name: string;
+  add: (
+    jobName: string,
+    data: unknown,
+    opts?: Parameters<Queue['add']>[2]
+  ) => Promise<unknown>;
+  /** Ensure the BullMQ client exists and Redis is ready for writes. */
+  waitUntilReady: () => Promise<void>;
+}
+
+export default function createQueue(name: string): ProducerQueue {
   let queue: Queue | undefined;
 
   function getQueue(): Queue {
@@ -50,10 +69,12 @@ export default function createQueue(name: string) {
   }
 
   return {
+    name,
     add: (
       jobName: string,
       data: unknown,
       opts?: Parameters<Queue['add']>[2]
     ) => getQueue().add(jobName, data, opts),
+    waitUntilReady: () => getQueue().waitUntilReady(),
   };
 }
