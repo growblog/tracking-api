@@ -79,7 +79,7 @@ function canonicalHost(value: string): string | null {
     return null;
   }
   try {
-    const withScheme = /^[a-z][a-z0-9+.-]*:/i.test(trimmed)
+    const withScheme = hasExplicitScheme(trimmed)
       ? trimmed
       : `http://${trimmed}`;
     const hostname = new URL(withScheme).hostname
@@ -89,6 +89,17 @@ function canonicalHost(value: string): string | null {
   } catch {
     return null;
   }
+}
+
+/**
+ * Distinguish real URI schemes from host:port (e.g. example.com:8080).
+ * A bare host:port must get an http:// prefix so URL.hostname parses correctly.
+ */
+function hasExplicitScheme(value: string): boolean {
+  return (
+    /^[a-z][a-z0-9+.-]*:\/\//i.test(value) ||
+    /^[a-z][a-z0-9+.-]*:[^0-9/]/i.test(value)
+  );
 }
 
 function stripWww(host: string): string {

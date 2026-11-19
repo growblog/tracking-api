@@ -29,6 +29,18 @@ describe('isAllowedReferer', () => {
     ).toBe(true);
   });
 
+  test('accepts domain with port and without scheme', () => {
+    expect(
+      isAllowedReferer('example.com:8080', null, 'http://example.com:8080/post')
+    ).toBe(true);
+    expect(
+      isAllowedReferer('example.com:8080', null, 'https://example.com/post')
+    ).toBe(true);
+    expect(
+      isAllowedReferer('localhost:3000', null, 'http://localhost:3000/')
+    ).toBe(true);
+  });
+
   test('rejects lookalike and cross-site referers', () => {
     expect(
       isAllowedReferer('example.com', null, 'https://evilexample.com/')
@@ -39,6 +51,8 @@ describe('isAllowedReferer', () => {
   });
 
   test('ghost.io pair only matches the blog subdomain', () => {
+    // Decision: only the same Ghost(Pro) subdomain is allowed — never any
+    // arbitrary *.ghost.io blog for another *.ghost.io blog.
     expect(
       isAllowedReferer(
         'my-site.ghost.io',
@@ -60,6 +74,13 @@ describe('isAllowedReferer', () => {
         'https://other-blog.ghost.io/post'
       )
     ).toBe(false);
+    expect(
+      isAllowedReferer(
+        'alpha.ghost.io',
+        null,
+        'https://beta.ghost.io/hello'
+      )
+    ).toBe(false);
   });
 
   test('custom-domain blogs do not get a free pass from any ghost.io host', () => {
@@ -68,3 +89,4 @@ describe('isAllowedReferer', () => {
     ).toBe(false);
   });
 });
+
